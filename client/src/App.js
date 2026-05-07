@@ -9,6 +9,7 @@ import TenderCreate from './pages/TenderCreate';
 import TenderEdit from './pages/TenderEdit';
 import TenderDetail from './pages/TenderDetail';
 import ExpiringGuarantees from './pages/ExpiringGuarantees';
+import GuaranteeVerification from './pages/GuaranteeVerification';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
@@ -46,6 +47,7 @@ function AppRoutes() {
         <Route path="tenders/:id" element={<TenderDetail />} />
         <Route path="tenders/:id/edit" element={<TenderEdit />} />
         <Route path="guarantees/expiring" element={<ExpiringGuarantees />} />
+        <Route path="guarantee-verification" element={<GuaranteeVerification />} />
         <Route path="profile" element={<Profile />} />
       </Route>
 

@@ -18,11 +18,12 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // API Routes
-app.use('/api/auth',       require('./routes/authRoutes'));
-app.use('/api/tenders',    require('./routes/tenderRoutes'));
-app.use('/api/guarantees', require('./routes/guaranteeRoutes'));
-app.use('/api/dashboard',  require('./routes/dashboardRoutes'));
-app.use('/api/upload',     require('./routes/uploadRoutes'));
+app.use('/api/auth',         require('./routes/authRoutes'));
+app.use('/api/tenders',      require('./routes/tenderRoutes'));
+app.use('/api/guarantees',   require('./routes/guaranteeRoutes'));
+app.use('/api/dashboard',    require('./routes/dashboardRoutes'));
+app.use('/api/upload',       require('./routes/uploadRoutes'));
+app.use('/api/verification', require('./routes/verificationRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -7,12 +7,14 @@ import {
   ExclamationTriangleIcon,
   XMarkIcon,
   BuildingLibraryIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 
 const navItems = [
   { to: '/dashboard', icon: HomeIcon, label: 'Dashboard' },
   { to: '/tenders', icon: DocumentTextIcon, label: 'Tenders' },
   { to: '/tenders/new', icon: PlusCircleIcon, label: 'New Tender' },
+  { to: '/guarantee-verification', icon: ShieldCheckIcon, label: 'BG Verification' },
   { to: '/guarantees/expiring', icon: ExclamationTriangleIcon, label: 'Expiring Alerts' },
 ];
 

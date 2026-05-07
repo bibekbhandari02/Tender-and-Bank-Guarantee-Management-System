@@ -29,6 +29,10 @@ export const dashboardAPI = {
   getStats: () => api.get('/dashboard/stats'),
 };
 
+export const verificationAPI = {
+  getGuarantees: (params) => api.get('/verification/guarantees', { params }),
+};
+
 export const uploadAPI = {
   // Tender uploads
   uploadBidNotice: (tenderId, formData, onProgress) =>
