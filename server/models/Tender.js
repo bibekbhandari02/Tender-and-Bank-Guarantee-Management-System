@@ -84,6 +84,13 @@ const tenderSchema = new mongoose.Schema(
       default: 'Active',
     },
 
+    // Owner
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+
     // Documents
     bidNoticeFiles: [
       {

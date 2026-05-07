@@ -56,6 +56,13 @@ const bankGuaranteeSchema = new mongoose.Schema(
       default: 'Active',
     },
 
+    // Owner (inherited from parent tender's user)
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+
     // Documents
     guaranteeFiles: [
       {
