@@ -25,7 +25,7 @@ const TenderCreate = () => {
       toast.success('Tender created successfully');
       navigate(`/tenders/${newId}`);
     } catch (err) {
-      toast.error(err?.response?.data?.message || err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }

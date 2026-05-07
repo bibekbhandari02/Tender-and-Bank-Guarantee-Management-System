@@ -73,9 +73,13 @@ exports.createTender = async (req, res) => {
     const tender = await Tender.create({ ...req.body, userId: req.user._id });
     res.status(201).json({ success: true, data: tender, message: 'Tender created successfully' });
   } catch (error) {
+    console.error('[createTender error]', error.message, error.code);
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map((e) => e.message);
       return res.status(400).json({ success: false, message: messages.join(', ') });
+    }
+    if (error.code === 11000) {
+      return res.status(400).json({ success: false, message: 'Contract number already exists' });
     }
     res.status(500).json({ success: false, message: error.message });
   }
