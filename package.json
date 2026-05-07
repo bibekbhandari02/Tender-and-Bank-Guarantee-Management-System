@@ -2,11 +2,17 @@
   "name": "tender-management-system",
   "version": "1.0.0",
   "description": "Tender & Bank Guarantee Management System",
+  "main": "server/index.js",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "nodemon server/index.js",
     "client": "npm start --prefix client",
+    "build": "npm install --prefix client && npm run build --prefix client",
+    "start": "node server/index.js",
     "install-all": "npm install && npm install --prefix client"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

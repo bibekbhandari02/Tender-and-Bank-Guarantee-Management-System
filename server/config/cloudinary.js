@@ -1,7 +1,5 @@
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -9,23 +7,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-// ── Multer: memory storage for images (go to Cloudinary)
-//           disk storage for PDFs (served locally)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const unique = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    cb(null, `${unique}${path.extname(file.originalname).toLowerCase()}`);
-  },
-});
-
+// All files go through memory — streamed directly to Cloudinary
 const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
     const allowed = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
     allowed.includes(file.mimetype)
@@ -35,45 +20,44 @@ const upload = multer({
 });
 
 /**
- * Upload an image file to Cloudinary.
- * Returns { secure_url, public_id }.
+ * Upload any file to Cloudinary via upload_stream.
+ * - Images → resource_type: 'image'  → public secure_url
+ * - PDFs   → resource_type: 'raw'    → public secure_url (with .pdf extension)
+ *
+ * Returns the full Cloudinary result object.
  */
-const uploadImageToCloudinary = (fileBuffer, folder) => {
+const uploadToCloudinary = (buffer, folder, mimetype) => {
   return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload_stream(
-      { folder, resource_type: 'image' },
-      (error, result) => (error ? reject(error) : resolve(result))
-    ).end(fileBuffer);
+    const isPdf = mimetype === 'application/pdf';
+    const options = {
+      folder,
+      resource_type: isPdf ? 'raw' : 'image',
+      // For raw PDFs: append .pdf so the URL ends in .pdf and browsers open it correctly
+      ...(isPdf && { public_id: `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.pdf` }),
+    };
+
+    cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (error) return reject(error);
+      resolve(result);
+    }).end(buffer);
   });
 };
 
 /**
- * Delete an image from Cloudinary.
+ * Delete a file from Cloudinary.
+ * resource_type must match what was used at upload time.
  */
-const deleteFromCloudinary = async (publicId) => {
+const deleteFromCloudinary = async (publicId, resourceType = 'image') => {
   try {
-    await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
   } catch (err) {
     console.error('Cloudinary delete error:', err.message);
-  }
-};
-
-/**
- * Delete a locally stored file.
- */
-const deleteLocalFile = (filename) => {
-  try {
-    const filePath = path.join(uploadsDir, filename);
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-  } catch (err) {
-    console.error('Local file delete error:', err.message);
   }
 };
 
 module.exports = {
   cloudinary,
   upload,
-  uploadImageToCloudinary,
+  uploadToCloudinary,
   deleteFromCloudinary,
-  deleteLocalFile,
 };
