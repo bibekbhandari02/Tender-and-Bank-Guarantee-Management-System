@@ -31,7 +31,8 @@ const uploadToCloudinary = (buffer, folder, mimetype) => {
     const options = {
       folder,
       resource_type: 'image',
-      // For PDFs, set format explicitly so the URL ends in .pdf
+      type: 'upload',           // ensures public delivery
+      access_mode: 'public',    // explicitly mark as public
       ...(mimetype === 'application/pdf' && { format: 'pdf' }),
     };
 
