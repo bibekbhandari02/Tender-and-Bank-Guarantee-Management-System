@@ -11,11 +11,11 @@ const isPdf = (mimetype) => mimetype === 'application/pdf';
 const processUploads = async (files, folder) => {
   return Promise.all(
     files.map(async (file) => {
-      const result = await uploadToCloudinary(file.buffer, folder, file.mimetype);
+      const result = await uploadToCloudinary(file.buffer, folder);
       return {
         url: result.secure_url,
         public_id: result.public_id,
-        resource_type: result.resource_type, // 'image' or 'raw'
+        resource_type: result.resource_type,
         file_name: file.originalname,
         file_type: file.mimetype,
       };

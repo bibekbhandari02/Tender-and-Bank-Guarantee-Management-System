@@ -7,7 +7,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// All files held in memory and streamed to Cloudinary
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -20,41 +19,18 @@ const upload = multer({
 });
 
 /**
- * Upload to Cloudinary:
- * - Images → resource_type: 'image'  (public, direct URL works)
- * - PDFs   → resource_type: 'raw'    (private, served via signed proxy)
+ * Upload any file to Cloudinary using resource_type: 'auto'.
+ * Cloudinary determines the correct type and returns a public secure_url.
  */
-const uploadToCloudinary = (buffer, folder, mimetype) => {
+const uploadToCloudinary = (buffer, folder) => {
   return new Promise((resolve, reject) => {
-    const isPdf = mimetype === 'application/pdf';
     cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: isPdf ? 'raw' : 'image',
-        ...(isPdf && {
-          public_id: `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          format: 'pdf',
-        }),
-      },
+      { folder, resource_type: 'auto' },
       (error, result) => {
         if (error) return reject(error);
         resolve(result);
       }
     ).end(buffer);
-  });
-};
-
-/**
- * Generate a signed URL valid for 1 hour.
- * Used server-side to proxy PDFs to the client.
- */
-const getSignedUrl = (publicId, resourceType = 'raw') => {
-  return cloudinary.url(publicId, {
-    resource_type: resourceType,
-    secure: true,
-    sign_url: true,
-    type: 'upload',
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
   });
 };
 
@@ -66,4 +42,4 @@ const deleteFromCloudinary = async (publicId, resourceType = 'image') => {
   }
 };
 
-module.exports = { cloudinary, upload, uploadToCloudinary, getSignedUrl, deleteFromCloudinary };
+module.exports = { cloudinary, upload, uploadToCloudinary, deleteFromCloudinary };
