@@ -4,6 +4,17 @@ import FileUpload from '../UI/FileUpload';
 import FileViewer from '../UI/FileViewer';
 import NepaliDateInput from '../UI/NepaliDateInput';
 
+// Defined outside the component so it's never recreated on re-render
+const Field = ({ label, required, error, children }) => (
+  <div>
+    <label className="form-label">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {children}
+    {error && <p className="form-error">{error}</p>}
+  </div>
+);
+
 const initialState = {
   bankName: '',
   guaranteeType: '',
@@ -87,16 +98,6 @@ const GuaranteeForm = ({ initialData, onSubmit, onDeleteFile, onCancel, loading 
       pendingFiles,
     });
   };
-
-  const Field = ({ label, name, required, error, children }) => (
-    <div>
-      <label className="form-label">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {children}
-      {error && <p className="form-error">{error}</p>}
-    </div>
-  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
