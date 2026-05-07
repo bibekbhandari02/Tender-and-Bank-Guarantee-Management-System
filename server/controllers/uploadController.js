@@ -24,7 +24,7 @@ const processUploads = async (files, folder) => {
 };
 
 const deleteFile = (file) => {
-  const resourceType = file.resource_type || (isPdf(file.file_type) ? 'raw' : 'image');
+  const resourceType = file.resource_type || (file.file_type === 'application/pdf' ? 'raw' : 'image');
   deleteFromCloudinary(file.public_id, resourceType);
 };
 

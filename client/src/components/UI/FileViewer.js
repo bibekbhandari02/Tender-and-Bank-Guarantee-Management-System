@@ -10,9 +10,14 @@ import {
 const isPdf = (fileType) => fileType === 'application/pdf' || fileType?.includes('pdf');
 const isImage = (fileType) => fileType?.startsWith('image/');
 
-const downloadFile = async (url, fileName) => {
+// Route PDFs through our backend proxy (generates signed Cloudinary URL server-side)
+const pdfProxyUrl = (publicId) => `/api/upload/pdf-proxy?publicId=${encodeURIComponent(publicId)}`;
+
+const downloadFile = async (url, fileName, publicId, fileType) => {
   try {
-    const response = await fetch(url);
+    // PDFs: fetch through proxy so we get the actual bytes
+    const fetchUrl = isPdf(fileType) && publicId ? pdfProxyUrl(publicId) : url;
+    const response = await fetch(fetchUrl);
     const blob = await response.blob();
     const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -28,59 +33,63 @@ const downloadFile = async (url, fileName) => {
 };
 
 // ── Preview Modal ────────────────────────────────────────────────
-const PreviewModal = ({ file, onClose }) => (
-  <div
-    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
-    onClick={onClose}
-  >
+const PreviewModal = ({ file, onClose }) => {
+  // For PDFs: use absolute proxy URL so iframe doesn't hit React Router
+  const serverBase = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const viewUrl = isPdf(file.file_type) && file.public_id
+    ? `${serverBase}/api/upload/pdf-proxy?publicId=${encodeURIComponent(file.public_id)}`
+    : file.url;
+
+  return (
     <div
-      className="relative flex flex-col w-full max-w-5xl"
-      style={{ height: '92vh' }}
-      onClick={(e) => e.stopPropagation()}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
+      onClick={onClose}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2 flex-shrink-0">
-        <p className="text-white text-sm font-medium truncate pr-4">{file.file_name}</p>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => downloadFile(file.url, file.file_name)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs transition-colors"
-          >
-            <ArrowDownTrayIcon className="w-4 h-4" />
-            Download
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-white hover:text-gray-300 transition-colors"
-          >
-            <XMarkIcon className="w-7 h-7" />
-          </button>
+      <div
+        className="relative flex flex-col w-full max-w-5xl"
+        style={{ height: '92vh' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-2 flex-shrink-0">
+          <p className="text-white text-sm font-medium truncate pr-4">{file.file_name}</p>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => downloadFile(file.url, file.file_name, file.public_id, file.file_type)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs transition-colors"
+            >
+              <ArrowDownTrayIcon className="w-4 h-4" />
+              Download
+            </button>
+            <button type="button" onClick={onClose} className="text-white hover:text-gray-300 transition-colors">
+              <XMarkIcon className="w-7 h-7" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 rounded-xl overflow-hidden bg-gray-100">
+          {isImage(file.file_type) ? (
+            <div className="w-full h-full flex items-center justify-center p-4">
+              <img
+                src={file.url}
+                alt={file.file_name}
+                className="max-w-full max-h-full object-contain rounded-lg"
+              />
+            </div>
+          ) : (
+            <iframe
+              src={viewUrl}
+              title={file.file_name}
+              className="w-full h-full border-0"
+            />
+          )}
         </div>
       </div>
-
-      {/* Content — Cloudinary image/upload URLs are always public */}
-      <div className="flex-1 rounded-xl overflow-hidden bg-gray-100">
-        {isImage(file.file_type) ? (
-          <div className="w-full h-full flex items-center justify-center p-4">
-            <img
-              src={file.url}
-              alt={file.file_name}
-              className="max-w-full max-h-full object-contain rounded-lg"
-            />
-          </div>
-        ) : (
-          <iframe
-            src={file.url}
-            title={file.file_name}
-            className="w-full h-full border-0"
-          />
-        )}
-      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ── Main FileViewer ──────────────────────────────────────────────
 const FileViewer = ({ files = [], onDelete, emptyText = 'No files uploaded' }) => {
@@ -132,7 +141,7 @@ const FileViewer = ({ files = [], onDelete, emptyText = 'No files uploaded' }) =
               </button>
               <button
                 type="button"
-                onClick={() => downloadFile(file.url, file.file_name)}
+                onClick={() => downloadFile(file.url, file.file_name, file.public_id, file.file_type)}
                 className="p-1.5 rounded-lg text-gray-400 hover:bg-primary-50 hover:text-primary-600 transition-colors"
                 title={`Download ${file.file_name}`}
               >

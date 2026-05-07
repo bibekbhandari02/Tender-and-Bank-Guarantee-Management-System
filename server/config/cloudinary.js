@@ -7,10 +7,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// All files go through memory — streamed directly to Cloudinary
+// All files held in memory and streamed to Cloudinary
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
     allowed.includes(file.mimetype)
@@ -20,44 +20,50 @@ const upload = multer({
 });
 
 /**
- * Upload any file to Cloudinary via upload_stream.
- * Both images AND PDFs use resource_type: 'image' so URLs are always public.
- * Cloudinary natively supports PDF as an image resource type.
- *
- * Returns the full Cloudinary result object.
+ * Upload to Cloudinary:
+ * - Images → resource_type: 'image'  (public, direct URL works)
+ * - PDFs   → resource_type: 'raw'    (private, served via signed proxy)
  */
 const uploadToCloudinary = (buffer, folder, mimetype) => {
   return new Promise((resolve, reject) => {
-    const options = {
-      folder,
-      resource_type: 'image',
-      type: 'upload',           // ensures public delivery
-      access_mode: 'public',    // explicitly mark as public
-      ...(mimetype === 'application/pdf' && { format: 'pdf' }),
-    };
-
-    cloudinary.uploader.upload_stream(options, (error, result) => {
-      if (error) return reject(error);
-      resolve(result);
-    }).end(buffer);
+    const isPdf = mimetype === 'application/pdf';
+    cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: isPdf ? 'raw' : 'image',
+        ...(isPdf && {
+          public_id: `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          format: 'pdf',
+        }),
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    ).end(buffer);
   });
 };
 
 /**
- * Delete a file from Cloudinary.
- * All files (images and PDFs) use resource_type: 'image'.
+ * Generate a signed URL valid for 1 hour.
+ * Used server-side to proxy PDFs to the client.
  */
+const getSignedUrl = (publicId, resourceType = 'raw') => {
+  return cloudinary.url(publicId, {
+    resource_type: resourceType,
+    secure: true,
+    sign_url: true,
+    type: 'upload',
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+  });
+};
+
 const deleteFromCloudinary = async (publicId, resourceType = 'image') => {
   try {
-    await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
   } catch (err) {
     console.error('Cloudinary delete error:', err.message);
   }
 };
 
-module.exports = {
-  cloudinary,
-  upload,
-  uploadToCloudinary,
-  deleteFromCloudinary,
-};
+module.exports = { cloudinary, upload, uploadToCloudinary, getSignedUrl, deleteFromCloudinary };

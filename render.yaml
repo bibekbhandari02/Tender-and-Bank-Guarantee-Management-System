@@ -4,11 +4,13 @@ services:
     env: node
     region: singapore
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: REACT_APP_API_URL=https://tender-and-bank-guarantee-management.onrender.com npm install && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
+      - key: REACT_APP_API_URL
+        value: https://tender-and-bank-guarantee-management.onrender.com
       - key: MONGODB_URI
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
