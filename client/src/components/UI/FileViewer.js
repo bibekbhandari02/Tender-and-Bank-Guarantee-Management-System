@@ -28,24 +28,11 @@ const downloadFile = async (url, fileName) => {
 };
 
 // ── Preview Modal ────────────────────────────────────────────────
-const PreviewModal = ({ file, onClose }) => {
-  const [pdfUrl, setPdfUrl] = React.useState(null);
-
-  React.useEffect(() => {
-    if (!isPdf(file.file_type)) return;
-    // For PDFs stored as Cloudinary raw, fetch a signed URL from our backend
-    const base = process.env.REACT_APP_API_URL || '';
-    fetch(`${base}/api/upload/signed-url?publicId=${encodeURIComponent(file.public_id)}&resourceType=${file.resource_type || 'raw'}`)
-      .then((r) => r.json())
-      .then((data) => setPdfUrl(data.url))
-      .catch(() => setPdfUrl(file.url)); // fallback to stored URL
-  }, [file]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
-      onClick={onClose}
-    >
+const PreviewModal = ({ file, onClose }) => (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
+    onClick={onClose}
+  >
     <div
       className="relative flex flex-col w-full max-w-5xl"
       style={{ height: '92vh' }}
@@ -63,13 +50,17 @@ const PreviewModal = ({ file, onClose }) => {
             <ArrowDownTrayIcon className="w-4 h-4" />
             Download
           </button>
-          <button type="button" onClick={onClose} className="text-white hover:text-gray-300 transition-colors">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-white hover:text-gray-300 transition-colors"
+          >
             <XMarkIcon className="w-7 h-7" />
           </button>
         </div>
       </div>
 
-      {/* Content */}
+      {/* Content — Cloudinary image/upload URLs are always public */}
       <div className="flex-1 rounded-xl overflow-hidden bg-gray-100">
         {isImage(file.file_type) ? (
           <div className="w-full h-full flex items-center justify-center p-4">
@@ -80,24 +71,16 @@ const PreviewModal = ({ file, onClose }) => {
             />
           </div>
         ) : (
-          // PDFs: use signed URL from backend to bypass Cloudinary auth
-          pdfUrl ? (
-            <iframe
-              src={pdfUrl}
-              title={file.file_name}
-              className="w-full h-full border-0"
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-              Loading PDF...
-            </div>
-          )
+          <iframe
+            src={file.url}
+            title={file.file_name}
+            className="w-full h-full border-0"
+          />
         )}
       </div>
     </div>
   </div>
-  );
-};
+);
 
 // ── Main FileViewer ──────────────────────────────────────────────
 const FileViewer = ({ files = [], onDelete, emptyText = 'No files uploaded' }) => {

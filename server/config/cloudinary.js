@@ -21,19 +21,18 @@ const upload = multer({
 
 /**
  * Upload any file to Cloudinary via upload_stream.
- * - Images → resource_type: 'image'  → public secure_url
- * - PDFs   → resource_type: 'raw'    → public secure_url (with .pdf extension)
+ * Both images AND PDFs use resource_type: 'image' so URLs are always public.
+ * Cloudinary natively supports PDF as an image resource type.
  *
  * Returns the full Cloudinary result object.
  */
 const uploadToCloudinary = (buffer, folder, mimetype) => {
   return new Promise((resolve, reject) => {
-    const isPdf = mimetype === 'application/pdf';
     const options = {
       folder,
-      resource_type: isPdf ? 'raw' : 'image',
-      // For raw PDFs: append .pdf so the URL ends in .pdf and browsers open it correctly
-      ...(isPdf && { public_id: `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.pdf` }),
+      resource_type: 'image',
+      // For PDFs, set format explicitly so the URL ends in .pdf
+      ...(mimetype === 'application/pdf' && { format: 'pdf' }),
     };
 
     cloudinary.uploader.upload_stream(options, (error, result) => {
@@ -45,11 +44,11 @@ const uploadToCloudinary = (buffer, folder, mimetype) => {
 
 /**
  * Delete a file from Cloudinary.
- * resource_type must match what was used at upload time.
+ * All files (images and PDFs) use resource_type: 'image'.
  */
 const deleteFromCloudinary = async (publicId, resourceType = 'image') => {
   try {
-    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
   } catch (err) {
     console.error('Cloudinary delete error:', err.message);
   }
